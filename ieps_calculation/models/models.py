@@ -53,7 +53,7 @@ class SaleOrderLine(models.Model):
 	@api.depends('tax_id')
 	def _compute_tax_id(self):
 		for line in self:
-			if line.order_id.partner_id.show_ieps == True:
+			if line.partner_id.show_ieps == True:
 				fpos = line.order_id.fiscal_position_id or line.order_id.partner_id.property_account_position_id
 				# If company_id is set, always filter taxes by the company
 				taxes = line.product_id.taxes_id.filtered(lambda r: not line.company_id or r.company_id == line.company_id)
