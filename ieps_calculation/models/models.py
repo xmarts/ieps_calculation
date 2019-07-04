@@ -51,7 +51,7 @@ class SaleOrderLine(models.Model):
 						ieps = True
 				if ieps == True:
 					ieps_amount += x.amount
-			price = price - ieps_amount
+			#price = price - ieps_amount
 			mytaxes = self.env['account.tax'].search([('id','in',lista)])
 			taxes = mytaxes.compute_all(price, line.order_id.currency_id, line.product_uom_qty, product=line.product_id, partner=line.order_id.partner_shipping_id)
 			line.update({
@@ -159,7 +159,7 @@ class InvoiceLines(models.Model):
 					else:
 						amount_ieps += x.amount
 				mytaxes = self.env['account.tax'].search([('id','in',lista)])
-				taxes = mytaxes.compute_all((price - amount_ieps), currency, self.quantity, product=self.product_id, partner=self.invoice_id.partner_id)
+				taxes = mytaxes.compute_all(price, currency, self.quantity, product=self.product_id, partner=self.invoice_id.partner_id)
 			#self.price_subtotal = price_subtotal_signed = taxes['total_excluded'] if taxes else self.quantity * price
 			self.price_subtotal = price_subtotal_signed = (self.price_unit * self.quantity)
 			self.price_total = (taxes['total_included'] if taxes else self.price_subtotal) + (amount_ieps*self.quantity)
@@ -307,7 +307,7 @@ class AccountInvoice(models.Model):
 				if "IEPS" not in line.name.upper():
 					self.amount_tax += round_curr(line.amount_total)
 			# self.amount_tax = sum(round_curr(line.amount_total) for line in self.tax_line_ids)
-			self.amount_total = self.amount_untaxed + self.amount_tax
+			self.amount_total = round_curr(self.amount_untaxed + self.amount_tax)
 			amount_total_company_signed = self.amount_total
 			amount_untaxed_signed = self.amount_untaxed
 			if self.currency_id and self.company_id and self.currency_id != self.company_id.currency_id:
@@ -487,7 +487,7 @@ class AccountInvoice(models.Model):
 							ieps = True
 					if ieps == True:
 						amount_ieps += x.amount
-				taxes = line.invoice_line_tax_ids.compute_all((price_unit-amount_ieps), self.currency_id, line.quantity, line.product_id, self.partner_id)['taxes']
+				taxes = line.invoice_line_tax_ids.compute_all(price_unit, self.currency_id, line.quantity, line.product_id, self.partner_id)['taxes']
 				for tax in taxes:
 					val = self._prepare_tax_line_vals(line, tax)
 					key = self.env['account.tax'].browse(tax['id']).get_grouping_key(val)
