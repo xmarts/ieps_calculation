@@ -57,7 +57,7 @@ class SaleOrderLine(models.Model):
 			line.update({
 				'price_tax': sum(t.get('amount', 0.0) for t in taxes.get('taxes', [])),
 				'price_total': taxes['total_included'],
-				'price_subtotal': taxes['total_excluded'] + (ieps_amount*line.product_uom_qty),
+				'price_subtotal': taxes['total_excluded'],
 			})
 
 	@api.multi
