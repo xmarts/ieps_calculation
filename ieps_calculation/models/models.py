@@ -121,54 +121,54 @@ class SaleOrderLine(models.Model):
 class InvoiceLines(models.Model):
 	_inherit = "account.invoice.line"
 
-	@api.one
-	@api.depends('price_unit', 'discount', 'invoice_line_tax_ids', 'quantity',
-		'product_id', 'invoice_id.partner_id', 'invoice_id.currency_id', 'invoice_id.company_id',
-		'invoice_id.date_invoice', 'invoice_id.date')
-	def _compute_price(self):
-		if self.invoice_id.type not in ('out_invoice', 'out_refund'):
-			currency = self.invoice_id and self.invoice_id.currency_id or None
-			price = self.price_unit * (1 - (self.discount or 0.0) / 100.0)
-			taxes = False
-			if self.invoice_line_tax_ids:
-				taxes = self.invoice_line_tax_ids.compute_all(price, currency, self.quantity, product=self.product_id, partner=self.invoice_id.partner_id)
-			self.price_subtotal = price_subtotal_signed = taxes['total_excluded'] if taxes else self.quantity * price
-			self.price_total = taxes['total_included'] if taxes else self.price_subtotal
-			if self.invoice_id.currency_id and self.invoice_id.currency_id != self.invoice_id.company_id.currency_id:
-				currency = self.invoice_id.currency_id
-				date = self.invoice_id._get_currency_rate_date()
-				price_subtotal_signed = currency._convert(price_subtotal_signed, self.invoice_id.company_id.currency_id, self.company_id or self.env.user.company_id, date or fields.Date.today())
-			sign = self.invoice_id.type in ['in_refund', 'out_refund'] and -1 or 1
-			self.price_subtotal_signed = price_subtotal_signed * sign
-		if self.invoice_id.type in ('out_invoice', 'out_refund'):
-			currency = self.invoice_id and self.invoice_id.currency_id or None
-			price = self.price_unit * (1 - (self.discount or 0.0) / 100.0)
-			taxes = False
-			mytaxes = False
-			amount_ieps = 0
-			if self.invoice_line_tax_ids:
-				taxs = self.product_id.taxes_id.filtered(lambda r: not self.company_id or r.company_id == self.company_id)
-				lista = []
-				for x in taxs:
-					ieps = False
-					for z in x.tag_ids:
-						if z.name == 'IEPS':
-							ieps = True
-					if ieps == False:
-						lista.append(x.id)
-					else:
-						amount_ieps += x.amount
-				mytaxes = self.env['account.tax'].search([('id','in',lista)])
-				taxes = mytaxes.compute_all(price, currency, self.quantity, product=self.product_id, partner=self.invoice_id.partner_id)
-			#self.price_subtotal = price_subtotal_signed = taxes['total_excluded'] if taxes else self.quantity * price
-			self.price_subtotal = price_subtotal_signed = (self.price_unit * self.quantity)
-			self.price_total = (taxes['total_included'] if taxes else self.price_subtotal) + (amount_ieps*self.quantity)
-			if self.invoice_id.currency_id and self.invoice_id.currency_id != self.invoice_id.company_id.currency_id:
-				currency = self.invoice_id.currency_id
-				date = self.invoice_id._get_currency_rate_date()
-				price_subtotal_signed = currency._convert(price_subtotal_signed, self.invoice_id.company_id.currency_id, self.company_id or self.env.user.company_id, date or fields.Date.today())
-			sign = self.invoice_id.type in ['in_refund', 'out_refund'] and -1 or 1
-			self.price_subtotal_signed = price_subtotal_signed * sign
+	# @api.one
+	# @api.depends('price_unit', 'discount', 'invoice_line_tax_ids', 'quantity',
+	# 	'product_id', 'invoice_id.partner_id', 'invoice_id.currency_id', 'invoice_id.company_id',
+	# 	'invoice_id.date_invoice', 'invoice_id.date')
+	# def _compute_price(self):
+	# 	if self.invoice_id.type not in ('out_invoice', 'out_refund'):
+	# 		currency = self.invoice_id and self.invoice_id.currency_id or None
+	# 		price = self.price_unit * (1 - (self.discount or 0.0) / 100.0)
+	# 		taxes = False
+	# 		if self.invoice_line_tax_ids:
+	# 			taxes = self.invoice_line_tax_ids.compute_all(price, currency, self.quantity, product=self.product_id, partner=self.invoice_id.partner_id)
+	# 		self.price_subtotal = price_subtotal_signed = taxes['total_excluded'] if taxes else self.quantity * price
+	# 		self.price_total = taxes['total_included'] if taxes else self.price_subtotal
+	# 		if self.invoice_id.currency_id and self.invoice_id.currency_id != self.invoice_id.company_id.currency_id:
+	# 			currency = self.invoice_id.currency_id
+	# 			date = self.invoice_id._get_currency_rate_date()
+	# 			price_subtotal_signed = currency._convert(price_subtotal_signed, self.invoice_id.company_id.currency_id, self.company_id or self.env.user.company_id, date or fields.Date.today())
+	# 		sign = self.invoice_id.type in ['in_refund', 'out_refund'] and -1 or 1
+	# 		self.price_subtotal_signed = price_subtotal_signed * sign
+	# 	if self.invoice_id.type in ('out_invoice', 'out_refund'):
+	# 		currency = self.invoice_id and self.invoice_id.currency_id or None
+	# 		price = self.price_unit * (1 - (self.discount or 0.0) / 100.0)
+	# 		taxes = False
+	# 		mytaxes = False
+	# 		amount_ieps = 0
+	# 		if self.invoice_line_tax_ids:
+	# 			taxs = self.product_id.taxes_id.filtered(lambda r: not self.company_id or r.company_id == self.company_id)
+	# 			lista = []
+	# 			for x in taxs:
+	# 				ieps = False
+	# 				for z in x.tag_ids:
+	# 					if z.name == 'IEPS':
+	# 						ieps = True
+	# 				if ieps == False:
+	# 					lista.append(x.id)
+	# 				else:
+	# 					amount_ieps += x.amount
+	# 			mytaxes = self.env['account.tax'].search([('id','in',lista)])
+	# 			taxes = mytaxes.compute_all(price, currency, self.quantity, product=self.product_id, partner=self.invoice_id.partner_id)
+	# 		#self.price_subtotal = price_subtotal_signed = taxes['total_excluded'] if taxes else self.quantity * price
+	# 		self.price_subtotal = price_subtotal_signed = (self.price_unit * self.quantity)
+	# 		self.price_total = (taxes['total_included'] if taxes else self.price_subtotal) + (amount_ieps*self.quantity)
+	# 		if self.invoice_id.currency_id and self.invoice_id.currency_id != self.invoice_id.company_id.currency_id:
+	# 			currency = self.invoice_id.currency_id
+	# 			date = self.invoice_id._get_currency_rate_date()
+	# 			price_subtotal_signed = currency._convert(price_subtotal_signed, self.invoice_id.company_id.currency_id, self.company_id or self.env.user.company_id, date or fields.Date.today())
+	# 		sign = self.invoice_id.type in ['in_refund', 'out_refund'] and -1 or 1
+	# 		self.price_subtotal_signed = price_subtotal_signed * sign
 
 
 
@@ -271,10 +271,8 @@ class InvoiceLines(models.Model):
 				if ieps == True:
 					amount_ieps += x.amount
 			if company and currency:
-				if company.currency_id != currency:
-					self.price_unit = (self.price_unit * currency.with_context(dict(self._context or {}, date=self.invoice_id.date_invoice)).rate) + (amount_ieps * currency.with_context(dict(self._context or {}, date=self.invoice_id.date_invoice)).rate)
-				else:
-					self.price_unit = self.price_unit + amount_ieps
+				self.price_unit = (self.price_unit * currency.with_context(dict(self._context or {}, date=self.invoice_id.date_invoice)).rate)
+
 
 
 
@@ -304,8 +302,11 @@ class AccountInvoice(models.Model):
 			round_curr = self.currency_id.round
 			self.amount_untaxed = sum(line.price_subtotal for line in self.invoice_line_ids)
 			for line in self.tax_line_ids:
-				if "IEPS" not in line.name.upper():
+				if self.partner_id.show_ieps == True:
 					self.amount_tax += round_curr(line.amount_total)
+				else:
+					if "IEPS" not in line.name.upper():
+						self.amount_tax += round_curr(line.amount_total)
 			# self.amount_tax = sum(round_curr(line.amount_total) for line in self.tax_line_ids)
 			self.amount_total = round_curr(self.amount_untaxed + self.amount_tax)
 			amount_total_company_signed = self.amount_total
@@ -386,23 +387,40 @@ class AccountInvoice(models.Model):
 							ieps = True
 					if ieps == True:
 						amount_ieps += x.amount
-
-				move_line_dict = {
-					'invl_id': line.id,
-					'type': 'src',
-					'name': line.name,
-					'price_unit': line.price_unit,
-					'quantity': line.quantity,
-					'price': line.price_subtotal - (amount_ieps * line.quantity),
-					'account_id': line.account_id.id,
-					'product_id': line.product_id.id,
-					'uom_id': line.uom_id.id,
-					'account_analytic_id': line.account_analytic_id.id,
-					'analytic_tag_ids': analytic_tag_ids,
-					'tax_ids': tax_ids,
-					'invoice_id': self.id,
-				}
-				res.append(move_line_dict)
+				if self.partner_id.show_ieps == True:
+					move_line_dict = {
+						'invl_id': line.id,
+						'type': 'src',
+						'name': line.name,
+						'price_unit': line.price_unit,
+						'quantity': line.quantity,
+						'price': line.price_subtotal,
+						'account_id': line.account_id.id,
+						'product_id': line.product_id.id,
+						'uom_id': line.uom_id.id,
+						'account_analytic_id': line.account_analytic_id.id,
+						'analytic_tag_ids': analytic_tag_ids,
+						'tax_ids': tax_ids,
+						'invoice_id': self.id,
+					}
+					res.append(move_line_dict)
+				else:
+					move_line_dict = {
+						'invl_id': line.id,
+						'type': 'src',
+						'name': line.name,
+						'price_unit': line.price_unit,
+						'quantity': line.quantity,
+						'price': line.price_subtotal - (amount_ieps * line.quantity),
+						'account_id': line.account_id.id,
+						'product_id': line.product_id.id,
+						'uom_id': line.uom_id.id,
+						'account_analytic_id': line.account_analytic_id.id,
+						'analytic_tag_ids': analytic_tag_ids,
+						'tax_ids': tax_ids,
+						'invoice_id': self.id,
+					}
+					res.append(move_line_dict)
 			return res
 
 	@api.multi
@@ -493,4 +511,4 @@ class AccountMoveLine(models.Model):
 						ieps = True
 				if ieps == True:
 					amount_ieps += x.amount
-			self.credit = (self.product_id.lst_price + amount_ieps) * self.quantity
+			self.credit = (self.product_id.lst_price - amount_ieps) * self.quantity
