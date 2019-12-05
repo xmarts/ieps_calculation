@@ -12,7 +12,7 @@ from werkzeug.urls import url_encode
 
 from odoo import api, exceptions, fields, models, _
 from odoo.tools import email_re, email_split, email_escape_char, float_is_zero, float_compare, \
-    pycompat, date_utils
+	pycompat, date_utils
 from odoo.tools.misc import formatLang
 
 from odoo.exceptions import AccessError, UserError, RedirectWarning, ValidationError, Warning
@@ -279,6 +279,35 @@ class InvoiceLines(models.Model):
 class AccountInvoice(models.Model):
 	_inherit = "account.invoice"
 	
+	def _amount_by_group(self):
+		for invoice in self:
+			currency = invoice.currency_id or invoice.company_id.currency_id
+			fmt = partial(formatLang, invoice.with_context(lang=invoice.partner_id.lang).env, currency_obj=currency)
+			res = {}
+			taxs = []
+			if invoice.partner_id.show_ieps == True:
+				taxs = invoice.tax_line_ids
+			else:
+				for x in invoice.tax_line_ids:
+					ieps = False
+					for z in x.tax_id.tag_ids:
+						if z.name == 'IEPS':
+							ieps = True
+					if ieps == False:
+						taxs.append(x)
+			for line in taxs:
+				tax = line.tax_id
+				group_key = (tax.tax_group_id, tax.amount_type, tax.amount)
+				res.setdefault(group_key, {'base': 0.0, 'amount': 0.0})
+				res[group_key]['amount'] += line.amount_total
+				res[group_key]['base'] += line.base
+			res = sorted(res.items(), key=lambda l: l[0][0].sequence)
+			invoice.amount_by_group = [(
+				r[0][0].name, r[1]['amount'], r[1]['base'],
+				fmt(r[1]['amount']), fmt(r[1]['base']),
+				len(res),
+			) for r in res]
+
 	@api.one
 	@api.depends('invoice_line_ids.price_subtotal', 'tax_line_ids.amount', 'tax_line_ids.amount_rounding',
 				 'currency_id', 'company_id', 'date_invoice', 'type')
