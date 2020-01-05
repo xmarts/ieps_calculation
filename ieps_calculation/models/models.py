@@ -22,6 +22,41 @@ import logging
 class ResPartner(models.Model):
 	_inherit = "res.partner"
 	show_ieps = fields.Boolean(string="Mostrar IEPS.", default=False)
+
+class PosOrderLine(models.Model):
+	_inherit = 'pos.order.line'
+
+	@api.model
+	def create(self, vals):
+		rec = super(PosOrderLine, self).create(vals)
+		if rec.order_id.partner_id:
+			print("TIENE PARTNER")
+			if rec.order_id.partner_id.show_ieps != True:
+				print("NO MUESTRA IEPS")
+				taxs = rec.tax_ids
+				lista = []
+				for x in taxs:
+					print("IMPUESTOS >>>>>>>>>>>>>>> ",x)
+					ieps_t = False
+					for t in x.tag_ids:
+						if t.name == "IEPS":
+							ieps_t = True
+						print("TAGS >>>>>>> ",t.name)
+					if ieps_t == True:
+						print("--- ESTE IMPUESTO ES UN IEPS ---")
+					else:
+						lista.append(x.id)
+						print("xxx ESTE IMPUESTO NO ES IEPS xxx")
+				rec.update({"tax_ids" : [(6,0,lista)]})
+				rec.update({"tax_ids_after_fiscal_position" : [(6,0,lista)]})
+				# rec.tax_ids_after_fiscal_position = [(6,0,lista)]
+				return rec
+			else:
+				print("MUESTRA IEPS")
+				return rec
+		else:
+			print("NO TIERNE PARTNER SELECCIONADO")
+			return rec
 		
 class SaleOrderLine(models.Model):
 	_inherit = 'sale.order.line'
