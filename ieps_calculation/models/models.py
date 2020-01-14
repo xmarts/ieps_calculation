@@ -104,8 +104,10 @@ class SaleOrderLine(models.Model):
 				# If company_id is set, always filter taxes by the company
 				taxes = line.product_id.taxes_id.filtered(lambda r: not line.company_id or r.company_id == line.company_id)
 				line.tax_id = fpos.map_tax(taxes, line.product_id, line.order_id.partner_shipping_id) if fpos else taxes
-			if line.order_id.partner_id.show_ieps == False:
+			if line.order_id.partner_id.show_ieps != True:
+				print("TIENE ORDEN",line.order_id.partner_id.show_ieps)
 				fpos = line.order_id.fiscal_position_id or line.order_id.partner_id.property_account_position_id
+				print(fpos)
 				# If company_id is set, always filter taxes by the company
 				taxes = line.product_id.taxes_id.filtered(lambda r: not line.company_id or r.company_id == line.company_id)
 				mytaxes = self.env['account.tax']
@@ -119,6 +121,7 @@ class SaleOrderLine(models.Model):
 						lista.append(x.id)
 				
 				line.tax_id = fpos.map_tax(mytaxes.search([('id','in',lista)]), line.product_id, line.order_id.partner_shipping_id) if fpos else taxes
+
 
 
 	@api.onchange('product_uom', 'product_uom_qty','tax_id')
@@ -287,7 +290,10 @@ class InvoiceLines(models.Model):
 			currency = self.invoice_id.currency_id
 			if company and currency:
 				if company.currency_id != currency:
-					self.price_unit = self.price_unit * currency.with_context(dict(self._context or {}, date=self.invoice_id.date_invoice)).rate
+					if self.invoice_id.tipo_cambio_manual != 0.0 and company.currency_id != currency:
+						self.price_unit = (self.price_unit * self.invoice_id.tipo_cambio_manual)
+					else:
+						self.price_unit = (self.price_unit * currency.with_context(dict(self._context or {}, date=self.invoice_id.date_invoice)).rate)
 		if self.invoice_id.type in ('out_invoice', 'out_refund'):
 
 			company = self.invoice_id.company_id
@@ -306,13 +312,18 @@ class InvoiceLines(models.Model):
 				if ieps == True:
 					amount_ieps += x.amount
 			if company and currency:
-				self.price_unit = (self.price_unit * currency.with_context(dict(self._context or {}, date=self.invoice_id.date_invoice)).rate)
+				if self.invoice_id.tipo_cambio_manual != 0.0 and company.currency_id != currency:
+					self.price_unit = (self.price_unit * self.invoice_id.tipo_cambio_manual)
+				else:
+					self.price_unit = (self.price_unit * currency.with_context(dict(self._context or {}, date=self.invoice_id.date_invoice)).rate)
 
 
 
 
 class AccountInvoice(models.Model):
 	_inherit = "account.invoice"
+
+	tipo_cambio_manual = fields.Float(string="Defina el tipo de cambio manual.", help="Si quiere tomar el tipo de cambio por defecto deje el campo en cero '0.0'", default=0.0)
 	
 	def _amount_by_group(self):
 		for invoice in self:
