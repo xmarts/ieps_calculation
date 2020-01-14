@@ -20,6 +20,16 @@
         </xpath>
       </field>
     </record> 
+    <record id="account_invoice_inherit_tipo_cambio_prov" model="ir.ui.view">
+        <field name="name">account_invoice_inherit_tipo_cambio_prov</field>
+        <field name="model">account.invoice</field>
+        <field name="inherit_id" ref="account.invoice_supplier_form"/>
+        <field name="arch" type="xml">
+            <field name="date_invoice" position="after">
+                <field name="tipo_cambio_manual" />
+            </field>
+        </field>
+    </record>
     <!-- explicit list view definition -->
     <!--
     <record model="ir.ui.view" id="ieps_calculation.list">
