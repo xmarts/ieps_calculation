@@ -241,6 +241,7 @@ class InvoiceLines(models.Model):
 				taxes = self.product_id.taxes_id or self.account_id.tax_ids or self.invoice_id.company_id.account_sale_tax_id
 			else:
 				taxes = self.product_id.supplier_taxes_id or self.account_id.tax_ids or self.invoice_id.company_id.account_purchase_tax_id
+				
 
 			# Keep only taxes of the company
 			company_id = self.company_id or self.env.user.company_id
