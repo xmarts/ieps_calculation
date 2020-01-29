@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields, api, _
 from collections import OrderedDict
 import json
 import re
@@ -205,7 +204,6 @@ class AccountInvoice(models.Model):
 						if child.type_tax_use != 'none':
 							tax_ids.append((4, child.id, None))
 				analytic_tag_ids = [(4, analytic_tag.id, None) for analytic_tag in line.analytic_tag_ids]
-				print("Lineas Analiticas: ", tax_ids)
 				move_line_dict = {
 					'invl_id': line.id,
 					'type': 'src',
@@ -244,17 +242,28 @@ class AccountInvoice(models.Model):
 					if ieps == True:
 						tax_ids.append((4, tax.id, None))
 				analytic_tag_ids = [(4, analytic_tag.id, None) for analytic_tag in line.analytic_tag_ids]
-				print("Lineas Analiticas: ", tax_ids)
 				amount_ieps = 0
 				taxs = line.product_id.taxes_id.filtered(lambda r: not self.company_id or r.company_id == self.company_id)
 				lista = []
-				for x in taxs:
+				pricep = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
+				#taxes = line.tax_id.compute_all(price, line.order_id.currency_id, line.product_uom_qty, product=line.product_id, partner=line.order_id.partner_shipping_id)
+				taxxs = False
+				if self.partner_id.show_ieps == True:
+					taxxs=line.invoice_line_tax_ids.filtered(lambda r: not self.company_id or r.company_id == self.company_id)
+				else:
+					taxxs=line.product_id.taxes_id.filtered(lambda r: not self.company_id or r.company_id == self.company_id)
+				taxxes = taxxs.compute_all(pricep, self.currency_id, line.quantity, product=line.product_id, partner=self.partner_shipping_id)
+				for x in taxxs:
 					ieps = False
 					for z in x.tag_ids:
 						if z.name == 'IEPS':
 							ieps = True
 					if ieps == True:
-						amount_ieps += x.amount
+						if x.amount_type == 'fixed':
+							amount_ieps += x.amount * rec.quantity
+						if x.amount_type == 'percent':
+							#Falta enviar precio unitario verdadero
+							amount_ieps += taxxes['total_excluded']*(x.amount/100)
 				if self.partner_id.show_ieps == True:
 					move_line_dict = {
 						'invl_id': line.id,
@@ -271,6 +280,7 @@ class AccountInvoice(models.Model):
 						'tax_ids': tax_ids,
 						'invoice_id': self.id,
 					}
+					print("LINE1 :: ",move_line_dict)
 					res.append(move_line_dict)
 				else:
 					move_line_dict = {
@@ -288,19 +298,22 @@ class AccountInvoice(models.Model):
 						'tax_ids': tax_ids,
 						'invoice_id': self.id,
 					}
+					print("LINE2 :: ",move_line_dict)
 					res.append(move_line_dict)
 			return res
 
+
 	@api.multi
 	def get_taxes_values(self):
-		if self.type not in ('out_invoice', 'out_refund'):
+		rec = super(AccountInvoice, self).get_taxes_values()
+		if self.partner_id.show_ieps == False:
 			tax_grouped = {}
 			round_curr = self.currency_id.round
 			for line in self.invoice_line_ids:
 				if not line.account_id:
 					continue
 				price_unit = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
-				taxes = line.invoice_line_tax_ids.compute_all(price_unit, self.currency_id, line.quantity, line.product_id, self.partner_id)['taxes']
+				taxes = line.product_id.taxes_id.compute_all(price_unit, self.currency_id, line.quantity, line.product_id, self.partner_id)['taxes']
 				for tax in taxes:
 					val = self._prepare_tax_line_vals(line, tax)
 					key = self.env['account.tax'].browse(tax['id']).get_grouping_key(val)
@@ -312,54 +325,77 @@ class AccountInvoice(models.Model):
 						tax_grouped[key]['amount'] += val['amount']
 						tax_grouped[key]['base'] += round_curr(val['base'])
 			return tax_grouped
-		if self.type in ('out_invoice', 'out_refund'): 
-			tax_grouped = {}
-			round_curr = self.currency_id.round
-			for line in self.invoice_line_ids:
-				if not line.account_id:
-					continue
-				price_unit = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
-				amount_ieps = 0
-				taxs = line.product_id.taxes_id.filtered(lambda r: not self.company_id or r.company_id == self.company_id)
-				lista = []
-				for x in taxs:
-					ieps = False
-					for z in x.tag_ids:
-						if z.name == 'IEPS':
-							ieps = True
-					if ieps == True:
-						amount_ieps += x.amount
-				taxes = line.invoice_line_tax_ids.compute_all(price_unit, self.currency_id, line.quantity, line.product_id, self.partner_id)['taxes']
-				for tax in taxes:
-					val = self._prepare_tax_line_vals(line, tax)
-					key = self.env['account.tax'].browse(tax['id']).get_grouping_key(val)
-					if key not in tax_grouped:
-						tax_grouped[key] = val
-						tax_grouped[key]['base'] = round_curr(val['base'])
-					else:
-						tax_grouped[key]['amount'] += val['amount']
-						tax_grouped[key]['base'] += round_curr(val['base'])
-				if self.partner_id.show_ieps == False:
-					taxs = line.product_id.taxes_id.filtered(lambda r: not self.company_id or r.company_id == self.company_id)
-					lista = []
-					for x in taxs:
-						ieps = False
-						for z in x.tag_ids:
-							if z.name == 'IEPS':
-								ieps = True
-						if ieps == True:
-							lista.append(x.id)
-					mytaxes = self.env['account.tax'].search([('id','in',lista)])
-					taxes = mytaxes.compute_all(price_unit, self.currency_id, line.quantity, line.product_id, self.partner_id)['taxes']
-					for tax in taxes:
-						val = self._prepare_tax_line_vals(line, tax)
-						key = self.env['account.tax'].browse(tax['id']).get_grouping_key(val)
+		else:
+			return rec
 
-						if key not in tax_grouped:
-							tax_grouped[key] = val
-							tax_grouped[key]['base'] = round_curr(val['base'])
-						else:
-							tax_grouped[key]['amount'] += val['amount']
-							tax_grouped[key]['base'] += round_curr(val['base'])
-			return tax_grouped
+	# @api.multi
+	# def get_taxes_values(self):
+	# 	if self.type not in ('out_invoice', 'out_refund'):
+	# 		tax_grouped = {}
+	# 		round_curr = self.currency_id.round
+	# 		for line in self.invoice_line_ids:
+	# 			if not line.account_id:
+	# 				continue
+	# 			price_unit = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
+	# 			taxes = line.invoice_line_tax_ids.compute_all(price_unit, self.currency_id, line.quantity, line.product_id, self.partner_id)['taxes']
+	# 			for tax in taxes:
+	# 				val = self._prepare_tax_line_vals(line, tax)
+	# 				key = self.env['account.tax'].browse(tax['id']).get_grouping_key(val)
 
+	# 				if key not in tax_grouped:
+	# 					tax_grouped[key] = val
+	# 					tax_grouped[key]['base'] = round_curr(val['base'])
+	# 				else:
+	# 					tax_grouped[key]['amount'] += val['amount']
+	# 					tax_grouped[key]['base'] += round_curr(val['base'])
+	# 		return tax_grouped
+	# 	if self.type in ('out_invoice', 'out_refund'): 
+	# 		tax_grouped = {}
+	# 		round_curr = self.currency_id.round
+	# 		for line in self.invoice_line_ids:
+	# 			if not line.account_id:
+	# 				continue
+	# 			price_unit = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
+	# 			amount_ieps = 0
+	# 			taxs = line.product_id.taxes_id.filtered(lambda r: not self.company_id or r.company_id == self.company_id)
+	# 			lista = []
+	# 			for x in taxs:
+	# 				ieps = False
+	# 				for z in x.tag_ids:
+	# 					if z.name == 'IEPS':
+	# 						ieps = True
+	# 				if ieps == True:
+	# 					amount_ieps += x.amount
+	# 			taxes = line.invoice_line_tax_ids.compute_all(price_unit, self.currency_id, line.quantity, line.product_id, self.partner_id)['taxes']
+	# 			for tax in taxes:
+	# 				val = self._prepare_tax_line_vals(line, tax)
+	# 				key = self.env['account.tax'].browse(tax['id']).get_grouping_key(val)
+	# 				if key not in tax_grouped:
+	# 					tax_grouped[key] = val
+	# 					tax_grouped[key]['base'] = round_curr(val['base'])
+	# 				else:
+	# 					tax_grouped[key]['amount'] += val['amount']
+	# 					tax_grouped[key]['base'] += round_curr(val['base'])
+	# 			if self.partner_id.show_ieps == False:
+	# 				taxs = line.product_id.taxes_id.filtered(lambda r: not self.company_id or r.company_id == self.company_id)
+	# 				lista = []
+	# 				for x in taxs:
+	# 					ieps = False
+	# 					for z in x.tag_ids:
+	# 						if z.name == 'IEPS':
+	# 							ieps = True
+	# 					if ieps == True:
+	# 						lista.append(x.id)
+	# 				mytaxes = self.env['account.tax'].search([('id','in',lista)])
+	# 				taxes = mytaxes.compute_all(price_unit, self.currency_id, line.quantity, line.product_id, self.partner_id)['taxes']
+	# 				for tax in taxes:
+	# 					val = self._prepare_tax_line_vals(line, tax)
+	# 					key = self.env['account.tax'].browse(tax['id']).get_grouping_key(val)
+
+	# 					if key not in tax_grouped:
+	# 						tax_grouped[key] = val
+	# 						tax_grouped[key]['base'] = round_curr(val['base'])
+	# 					else:
+	# 						tax_grouped[key]['amount'] += val['amount']
+	# 						tax_grouped[key]['base'] += round_curr(val['base'])
+	# 		return tax_grouped

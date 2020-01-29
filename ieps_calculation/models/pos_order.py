@@ -16,8 +16,7 @@ class PosOrderLine(models.Model):
 					for t in x.tag_ids:
 						if t.name == "IEPS":
 							ieps_t = True
-					if ieps_t == True:
-					else:
+					if ieps_t ==  False:
 						lista.append(x.id)
 				rec.update({"tax_ids" : [(6,0,lista)]})
 				rec.update({"tax_ids_after_fiscal_position" : [(6,0,lista)]})
