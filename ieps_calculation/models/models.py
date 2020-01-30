@@ -252,7 +252,7 @@ class AccountInvoice(models.Model):
 					taxxs=line.invoice_line_tax_ids.filtered(lambda r: not self.company_id or r.company_id == self.company_id)
 				else:
 					taxxs=line.product_id.taxes_id.filtered(lambda r: not self.company_id or r.company_id == self.company_id)
-				taxxes = taxxs.compute_all(pricep, self.currency_id, line.quantity, product=line.product_id, partner=self.partner_shipping_id)
+				taxxes = taxxs.compute_all(pricep, self.currency_id, 1, product=line.product_id, partner=self.partner_shipping_id)
 				for x in taxxs:
 					ieps = False
 					for z in x.tag_ids:
@@ -280,7 +280,7 @@ class AccountInvoice(models.Model):
 						'tax_ids': tax_ids,
 						'invoice_id': self.id,
 					}
-					# print("LINE1 :: ",move_line_dict)
+					print("LINE1 :: ",move_line_dict)
 					res.append(move_line_dict)
 				else:
 					move_line_dict = {
@@ -298,7 +298,7 @@ class AccountInvoice(models.Model):
 						'tax_ids': tax_ids,
 						'invoice_id': self.id,
 					}
-					# print("LINE2 :: ",move_line_dict)
+					print("LINE2 :: ",move_line_dict)
 					res.append(move_line_dict)
 			return res
 

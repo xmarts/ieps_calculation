@@ -128,26 +128,26 @@ class SaleOrderLine(models.Model):
 				uom=self.product_uom.id,
 				fiscal_position=self.env.context.get('fiscal_position')
 			)
-			iepstax = self.env['account.tax']
-			lista2 = []
-			p = (self.env['account.tax']._fix_tax_included_price_company(self._get_display_price(product), product.taxes_id, self.tax_id, self.company_id))
-			for x in self.product_id.taxes_id:
-				ieps = False
-				for z in x.tag_ids:
-					if z.name == 'IEPS':
-						ieps = True
-				if ieps == True:
-					lista2.append(x.id)
-			tax_amount = 0
-			for tax in iepstax.search([('id','in',lista2)]):
-				if tax.amount_type == 'fixed':
-					tax_amount += tax.amount
-				if tax.amount_type == 'percent':
-					tax_amount += p*(tax.amount/100)
+			# iepstax = self.env['account.tax']
+			# lista2 = []
+			# p = (self.env['account.tax']._fix_tax_included_price_company(self._get_display_price(product), product.taxes_id, self.tax_id, self.company_id))
+			# tax_amount = 0
+			# for x in self.product_id.taxes_id:
+			# 	ieps = False
+			# 	for z in x.tag_ids:
+			# 		if z.name == 'IEPS':
+			# 			ieps = True
+			# 	if ieps == True:
+			# 		if x.amount_type == 'fixed':
+			# 			tax_amount += x.amount
+			# 		if x.amount_type == 'percent':
+			# 			tax_amount += p*(x.amount/100)
+			# 		print("TAX:",tax_amount)
 				# tax_amount += tax.amount
-			_logger.info('Precio: %s ,Ipuesto: %s', (self.env['account.tax']._fix_tax_included_price_company(self._get_display_price(product), product.taxes_id, self.tax_id, self.company_id)),tax_amount)
+			# print(product)
+			# _logger.info('Precio: %s ,Ipuesto: %s', (self.env['account.tax']._fix_tax_included_price_company(self._get_display_price(product), product.taxes_id, product.taxes_id, self.company_id)),tax_amount)
 			# print("VALORES :: ",(self.env['account.tax']._fix_tax_included_price_company(self._get_display_price(product), product.taxes_id, self.tax_id, self.company_id)),tax_amount)
 			if self.order_id.partner_id.show_ieps == True:
 				self.price_unit = (self.env['account.tax']._fix_tax_included_price_company(self._get_display_price(product), product.taxes_id, self.tax_id, self.company_id))
 			else:
-				self.price_unit = (self.env['account.tax']._fix_tax_included_price_company(self._get_display_price(product), product.taxes_id, self.tax_id, self.company_id)) + (tax_amount)
+				self.price_unit = (self.env['account.tax']._fix_tax_included_price_company(self._get_display_price(product), product.taxes_id, product.taxes_id, self.company_id))
