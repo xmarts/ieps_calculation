@@ -280,7 +280,7 @@ class AccountInvoice(models.Model):
 						'tax_ids': tax_ids,
 						'invoice_id': self.id,
 					}
-					print("LINE1 :: ",move_line_dict)
+					# print("LINE1 :: ",move_line_dict)
 					res.append(move_line_dict)
 				else:
 					move_line_dict = {
@@ -298,7 +298,7 @@ class AccountInvoice(models.Model):
 						'tax_ids': tax_ids,
 						'invoice_id': self.id,
 					}
-					print("LINE2 :: ",move_line_dict)
+					# print("LINE2 :: ",move_line_dict)
 					res.append(move_line_dict)
 			return res
 

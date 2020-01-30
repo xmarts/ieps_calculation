@@ -92,9 +92,9 @@ class SaleOrderLine(models.Model):
 				taxes = line.product_id.taxes_id.filtered(lambda r: not line.company_id or r.company_id == line.company_id)
 				line.tax_id = fpos.map_tax(taxes, line.product_id, line.order_id.partner_shipping_id) if fpos else taxes
 			if line.order_id.partner_id.show_ieps != True:
-				print("TIENE ORDEN",line.order_id.partner_id.show_ieps)
+				# print("TIENE ORDEN",line.order_id.partner_id.show_ieps)
 				fpos = line.order_id.fiscal_position_id or line.order_id.partner_id.property_account_position_id
-				print(fpos)
+				# print(fpos)
 				# If company_id is set, always filter taxes by the company
 				taxes = line.product_id.taxes_id.filtered(lambda r: not line.company_id or r.company_id == line.company_id)
 				mytaxes = self.env['account.tax']
@@ -128,6 +128,7 @@ class SaleOrderLine(models.Model):
 			)
 			iepstax = self.env['account.tax']
 			lista2 = []
+			p = (self.env['account.tax']._fix_tax_included_price_company(self._get_display_price(product), product.taxes_id, self.tax_id, self.company_id))
 			for x in self.product_id.taxes_id:
 				ieps = False
 				for z in x.tag_ids:
@@ -137,7 +138,12 @@ class SaleOrderLine(models.Model):
 					lista2.append(x.id)
 			tax_amount = 0
 			for tax in iepstax.search([('id','in',lista2)]):
-				tax_amount += tax.amount
+				if tax.amount_type == 'fixed':
+					tax_amount += tax.amount
+				if tax.amount_type == 'percent':
+					tax_amount += p*(tax.amount/100)
+				# tax_amount += tax.amount
+			# print("VALORES :: ",(self.env['account.tax']._fix_tax_included_price_company(self._get_display_price(product), product.taxes_id, self.tax_id, self.company_id)),tax_amount)
 			if self.order_id.partner_id.show_ieps == True:
 				self.price_unit = (self.env['account.tax']._fix_tax_included_price_company(self._get_display_price(product), product.taxes_id, self.tax_id, self.company_id))
 			else:
