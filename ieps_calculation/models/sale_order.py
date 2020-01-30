@@ -145,7 +145,7 @@ class SaleOrderLine(models.Model):
 				if tax.amount_type == 'percent':
 					tax_amount += p*(tax.amount/100)
 				# tax_amount += tax.amount
-			_logger.debug('Precio: %s ,Ipuesto: %s', (self.env['account.tax']._fix_tax_included_price_company(self._get_display_price(product), product.taxes_id, self.tax_id, self.company_id)),tax_amount)
+			_logger.info('Precio: %s ,Ipuesto: %s', (self.env['account.tax']._fix_tax_included_price_company(self._get_display_price(product), product.taxes_id, self.tax_id, self.company_id)),tax_amount)
 			# print("VALORES :: ",(self.env['account.tax']._fix_tax_included_price_company(self._get_display_price(product), product.taxes_id, self.tax_id, self.company_id)),tax_amount)
 			if self.order_id.partner_id.show_ieps == True:
 				self.price_unit = (self.env['account.tax']._fix_tax_included_price_company(self._get_display_price(product), product.taxes_id, self.tax_id, self.company_id))
