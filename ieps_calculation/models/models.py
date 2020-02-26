@@ -117,7 +117,7 @@ class InvoiceLines(models.Model):
 class AccountInvoice(models.Model):
 	_inherit = "account.invoice"
 
-	tipo_cambio_manual = fields.Float(string="Defina el tipo de cambio manual.",  help="Si quiere tomar el tipo de cambio por defecto deje el campo en cero '0.0'", default=0.0)
+	tipo_cambio_manual = fields.Float(string="Defina el tipo de cambio manual.", digits=(12,4), help="Si quiere tomar el tipo de cambio por defecto deje el campo en cero '0.0'", default=0.0)
 	
 	def _amount_by_group(self):
 		for invoice in self:
