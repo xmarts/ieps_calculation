@@ -262,7 +262,7 @@ class AccountInvoice(models.Model):
 							ieps = True
 					if ieps == True:
 						if x.amount_type == 'fixed':
-							amount_ieps += x.amount * rec.quantity
+							amount_ieps += x.amount * line.quantity
 						if x.amount_type == 'percent':
 							#Falta enviar precio unitario verdadero
 							amount_ieps += taxxes['total_excluded']*(x.amount/100)
