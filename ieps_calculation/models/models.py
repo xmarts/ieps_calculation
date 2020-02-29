@@ -91,7 +91,8 @@ class InvoiceLines(models.Model):
 			if company and currency:
 				if company.currency_id != currency:
 					if self.invoice_id.tipo_cambio_manual != 0.0 and company.currency_id != currency:
-						self.price_unit = (self.price_unit * self.invoice_id.tipo_cambio_manual)
+						val =round((1/self.invoice_id.tipo_cambio_manual),3)
+						self.price_unit = (self.price_unit * val)
 					else:
 						self.price_unit = (self.price_unit * currency.with_context(dict(self._context or {}, date=self.invoice_id.date_invoice)).rate)
 		if self.invoice_id.type in ('out_invoice', 'out_refund'):
@@ -105,7 +106,8 @@ class InvoiceLines(models.Model):
 			taxes = taxes.filtered(lambda r: r.company_id == company)
 			if company and currency:
 				if self.invoice_id.tipo_cambio_manual != 0.0 and company.currency_id != currency:
-					self.price_unit = (self.price_unit * self.invoice_id.tipo_cambio_manual)
+					val =round((1/self.invoice_id.tipo_cambio_manual),3)
+					self.price_unit = (self.price_unit * val)
 				else:
 					self.price_unit = (self.price_unit * currency.with_context(dict(self._context or {}, date=self.invoice_id.date_invoice)).rate)
 
@@ -115,7 +117,7 @@ class InvoiceLines(models.Model):
 class AccountInvoice(models.Model):
 	_inherit = "account.invoice"
 
-	tipo_cambio_manual = fields.Float(string="Defina el tipo de cambio manual.", digits=(12,6), help="Si quiere tomar el tipo de cambio por defecto deje el campo en cero '0.0'", default=0.0)
+	tipo_cambio_manual = fields.Float(string="Defina el tipo de cambio manual.", digits=(12,4), help="Si quiere tomar el tipo de cambio por defecto deje el campo en cero '0.0'", default=0.0)
 	
 	def _amount_by_group(self):
 		for invoice in self:
