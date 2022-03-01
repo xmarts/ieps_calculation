@@ -1,0 +1,14 @@
+<odoo>
+  <data>
+    <record id="add_camp_tarif" model="ir.ui.view">
+      <field name="name">add.camp.tarif</field>
+      <field name="model">res.partner</field>
+      <field name="inherit_id" ref="account.view_partner_property_form"/>
+      <field name="arch" type="xml">
+        <xpath expr="//field[@name='property_payment_term_id']" position="before">
+            <field name="show_ieps"/>
+        </xpath>
+      </field>
+    </record> 
+  </data>
+</odoo>
