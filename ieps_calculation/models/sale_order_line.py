@@ -51,28 +51,34 @@ class SaleOrderLine(models.Model):
             p3 = 0.0
             impuestos = 0.0
 
-            te1 = line.tax_id.filtered(lambda x: 'IEPS' not in x.tag_ids.name and x.price_include!=True).compute_all(p1, line.order_id.currency_id, 1, product=line.product_id, partner=line.order_id.partner_shipping_id)['taxes']
+            te1 = line.tax_id.filtered(lambda x: 'IEPS' not in x.description and x.price_include!=True).compute_all(p1, line.order_id.currency_id, 1, product=line.product_id, partner=line.order_id.partner_shipping_id)['taxes']
+            print("te1",te1)
             if te1:
                 impuestos += te1[0]['amount']
-            t1 = line.tax_id.filtered(lambda x: 'IEPS' not in x.tag_ids.name and x.price_include==True).compute_all(p1, line.order_id.currency_id, 1, product=line.product_id, partner=line.order_id.partner_shipping_id)['taxes']
+            t1 = line.tax_id.filtered(lambda x: 'IEPS' not in x.description and x.price_include==True).compute_all(p1, line.order_id.currency_id, 1, product=line.product_id, partner=line.order_id.partner_shipping_id)['taxes']
+            print("t1",t1)
             if t1:
                 p -= float(t1[0]['amount'])
                 p2 = p1-float(t1[0]['amount'])
                 impuestos += t1[0]['amount']
 
-            te2 = line.tax_id.filtered(lambda x: 'IEPS' in x.tag_ids.name and x.amount_type == 'fixed' and x.price_include!=True).compute_all(p2, line.order_id.currency_id, 1, product=line.product_id, partner=line.order_id.partner_shipping_id)['taxes']
+            te2 = line.tax_id.filtered(lambda x: 'IEPS' in x.description and x.amount_type == 'fixed' and x.price_include!=True).compute_all(p2, line.order_id.currency_id, 1, product=line.product_id, partner=line.order_id.partner_shipping_id)['taxes']
+            print("te2",te2)
             if te2:
                 impuestos += te2[0]['amount']
-            t2 = line.tax_id.filtered(lambda x: 'IEPS' in x.tag_ids.name and x.amount_type == 'fixed' and x.price_include==True).compute_all(p2, line.order_id.currency_id, 1, product=line.product_id, partner=line.order_id.partner_shipping_id)['taxes']
+            t2 = line.tax_id.filtered(lambda x: 'IEPS' in x.description and x.amount_type == 'fixed' and x.price_include==True).compute_all(p2, line.order_id.currency_id, 1, product=line.product_id, partner=line.order_id.partner_shipping_id)['taxes']
+            print("t2",t2)
             if t2:
                 p -= float(t2[0]['amount'])
                 p3 = p2-float(t2[0]['amount'])
                 impuestos += t2[0]['amount']
 
-            te3 = line.tax_id.filtered(lambda x: 'IEPS' in x.tag_ids.name and x.amount_type == 'percent' and x.price_include!=True).compute_all(p3, line.order_id.currency_id, 1, product=line.product_id, partner=line.order_id.partner_shipping_id)['taxes']
+            te3 = line.tax_id.filtered(lambda x: 'IEPS' in x.description and x.amount_type == 'percent' and x.price_include!=True).compute_all(p3, line.order_id.currency_id, 1, product=line.product_id, partner=line.order_id.partner_shipping_id)['taxes']
+            print("te3",te3)
             if te3:
                 impuestos += te3[0]['amount']
-            t3 = line.tax_id.filtered(lambda x: 'IEPS' in x.tag_ids.name and x.amount_type == 'percent' and x.price_include==True).compute_all(p3, line.order_id.currency_id, 1, product=line.product_id, partner=line.order_id.partner_shipping_id)['taxes']
+            t3 = line.tax_id.filtered(lambda x: 'IEPS' in x.description and x.amount_type == 'percent' and x.price_include==True).compute_all(p3, line.order_id.currency_id, 1, product=line.product_id, partner=line.order_id.partner_shipping_id)['taxes']
+            print("t3",te3)
             if t3:
                 p -= float(t3[0]['amount'])
                 impuestos += t3[0]['amount']
@@ -81,7 +87,7 @@ class SaleOrderLine(models.Model):
                 'price_total': (p*line.product_uom_qty)+(impuestos*line.product_uom_qty),
                 'price_subtotal': p*line.product_uom_qty,#taxes['total_excluded'],
             }
-            print(x)
+            print("ccccccccccccc",x)
             line.update(x)
 
 
@@ -121,26 +127,33 @@ class SaleOrderLine(models.Model):
 
     def _compute_tax_id(self):
         for line in self:
+
+            print("line.order_id.partner_id.show_ieps",line.order_id.partner_id.show_ieps)
             if line.order_id.partner_id.show_ieps == True:
-                fpos = line.order_id.fiscal_position_id or line.order_id.partner_id.property_account_position_id
+                print("if line.order_id.partner_id.show_ieps == True:")
+                line = line.with_company(line.company_id)
+                fpos = line.order_id.fiscal_position_id or line.order_id.fiscal_position_id.get_fiscal_position(line.order_partner_id.id)
                 # If company_id is set, always filter taxes by the company
-                taxes = line.product_id.taxes_id.filtered(lambda r: not line.company_id or r.company_id == line.company_id)
-                line.tax_id = fpos.map_tax(taxes, line.product_id, line.order_id.partner_shipping_id) if fpos else taxes
+                taxes = line.product_id.taxes_id.filtered(lambda t: t.company_id == line.env.company)
+                print("taxes",)
+                line.tax_id = fpos.map_tax(taxes)
             else:
                 fpos = line.order_id.fiscal_position_id or line.order_id.partner_id.property_account_position_id
                 # If company_id is set, always filter taxes by the company
                 taxes = line.product_id.taxes_id.filtered(lambda r: not line.company_id or r.company_id == line.company_id)
                 mytaxes = self.env['account.tax']
+                print("xxx taxes xxx",taxes, fpos)
                 lista = []
                 for x in taxes:
                     ieps = False
-                    for z in x.tag_ids:
-                        if z.name == 'IEPS':
-                            ieps = True
+                    print("xxx x.description xxx",x.description, x.id)
+                    if x.description == 'IEPS':
+                        ieps = True
                     if ieps == False:
                         lista.append(x.id)
+                print("xxx lista xxx",mytaxes.search([('id','in',lista)]),line.product_id,line.order_id.partner_shipping_id)
                 
-                line.tax_id = fpos.map_tax(mytaxes.search([('id','in',lista)]), line.product_id, line.order_id.partner_shipping_id) if fpos else taxes
+                line.tax_id = fpos.map_tax(mytaxes.search([('id','in',lista)])) if fpos else taxes
 
 
     # @api.onchange('product_uom', 'product_uom_qty')
