@@ -131,7 +131,7 @@ class SaleOrderLine(models.Model):
 
             _logger.info("_compute_tax_id  <%s>", line.order_id.partner_id.show_ieps)
             if line.order_id.partner_id.show_ieps == True:
-                print("if line.order_id.partner_id.show_ieps == True:")
+                _logger.info("if line.order_id.partner_id.show_ieps == True:")
                 line = line.with_company(line.company_id)
                 fpos = line.order_id.fiscal_position_id or line.order_id.fiscal_position_id.get_fiscal_position(line.order_partner_id.id)
                 # If company_id is set, always filter taxes by the company
@@ -139,6 +139,7 @@ class SaleOrderLine(models.Model):
                 print("taxes",)
                 line.tax_id = fpos.map_tax(taxes)
             else:
+                _logger.info("if line.order_id.partner_id.show_ieps == True:")
                 fpos = line.order_id.fiscal_position_id or line.order_id.partner_id.property_account_position_id
                 # If company_id is set, always filter taxes by the company
                 taxes = line.product_id.taxes_id.filtered(lambda r: not line.company_id or r.company_id == line.company_id)
@@ -147,12 +148,12 @@ class SaleOrderLine(models.Model):
                 lista = []
                 for x in taxes:
                     ieps = False
-                    print("xxx x.description xxx",x.description, x.id)
+                    _logger.info("x.description  <%s>", x.description)
                     if x.description == 'IEPS':
                         ieps = True
                     if ieps == False:
                         lista.append(x.id)
-                print("xxx lista xxx",mytaxes.search([('id','in',lista)]),line.product_id,line.order_id.partner_shipping_id)
+                _logger.info("lista  <%s>", lista)
                 
                 line.tax_id = fpos.map_tax(mytaxes.search([('id','in',lista)])) if fpos else taxes
 
