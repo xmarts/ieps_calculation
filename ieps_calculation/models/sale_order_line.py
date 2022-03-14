@@ -156,7 +156,7 @@ class SaleOrderLine(models.Model):
                         lista.append(x.id)
                 _logger.info("lista  <%s>", lista)
                 
-                line.tax_id = fpos.map_tax(mytaxes.search([('id','in',lista)])) if fpos else taxes
+                line.write({'tax_id':fpos.map_tax(mytaxes.search([('id','in',lista)])) if fpos else taxes})
 
 
     # @api.onchange('product_uom', 'product_uom_qty')
