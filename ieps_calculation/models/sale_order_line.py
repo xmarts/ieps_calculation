@@ -89,6 +89,7 @@ class SaleOrderLine(models.Model):
                 'price_subtotal': p*line.product_uom_qty,#taxes['total_excluded'],
             }
             print("ccccccccccccc",x)
+            _logger.info("_compute_amount  <%s>", x)
             line.update(x)
 
 
