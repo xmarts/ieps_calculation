@@ -89,7 +89,6 @@ class SaleOrderLine(models.Model):
                 'price_subtotal': p*line.product_uom_qty,#taxes['total_excluded'],
             }
             print("ccccccccccccc",x)
-            _logger.info("_compute_amount  <%s>", x)
             line.update(x)
 
 
@@ -156,7 +155,7 @@ class SaleOrderLine(models.Model):
                         lista.append(x.id)
                 _logger.info("lista  <%s>", lista)
                 
-                line.write({'tax_id':fpos.map_tax(mytaxes.search([('id','in',lista)])) if fpos else taxes})
+                line.tax_id = fpos.map_tax(mytaxes.search([('id','in',lista)])) if fpos else taxes
 
 
     # @api.onchange('product_uom', 'product_uom_qty')
