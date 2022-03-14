@@ -41,3 +41,7 @@ class SaleOrder(models.Model):
                     'amount_total': amount_untaxed + amount_tax,
                 })
 
+    def cal_taxs(self):
+        for rec in self:
+            rec.order_line._compute_tax_id()
+

@@ -25,6 +25,7 @@
     'data': [
         # 'security/ir.model.access.csv',
         'views/res_partner.xml',
+        'views/views.xml',
         #'reports/report_ieps.xml'
     ],
 }
