@@ -19,6 +19,7 @@ from odoo.exceptions import AccessError, UserError, RedirectWarning, ValidationE
 
 from odoo.addons import decimal_precision as dp
 import logging
+_logger = logging.getLogger(__name__)
         
 class SaleOrderLine(models.Model):
     _inherit = 'sale.order.line'
@@ -128,7 +129,7 @@ class SaleOrderLine(models.Model):
     def _compute_tax_id(self):
         for line in self:
 
-            print("line.order_id.partner_id.show_ieps",line.order_id.partner_id.show_ieps)
+            _logger.info("_compute_tax_id  <%s>", line.order_id.partner_id.show_ieps)
             if line.order_id.partner_id.show_ieps == True:
                 print("if line.order_id.partner_id.show_ieps == True:")
                 line = line.with_company(line.company_id)
