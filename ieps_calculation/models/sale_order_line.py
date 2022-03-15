@@ -46,50 +46,68 @@ class SaleOrderLine(models.Model):
         Compute the amounts of the SO line.
         """
         for line in self:
-            p = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
-            p1 = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
-            p2 = 0.0
-            p3 = 0.0
-            impuestos = 0.0
 
-            te1 = line.tax_id.filtered(lambda x: 'IEPS' not in x.description and x.price_include!=True).compute_all(p1, line.order_id.currency_id, 1, product=line.product_id, partner=line.order_id.partner_shipping_id)['taxes']
-            print("te1",te1)
-            if te1:
-                impuestos += te1[0]['amount']
-            t1 = line.tax_id.filtered(lambda x: 'IEPS' not in x.description and x.price_include==True).compute_all(p1, line.order_id.currency_id, 1, product=line.product_id, partner=line.order_id.partner_shipping_id)['taxes']
-            print("t1",t1)
-            if t1:
-                p -= float(t1[0]['amount'])
-                p2 = p1-float(t1[0]['amount'])
-                impuestos += t1[0]['amount']
+            if line.order_id.partner_id.show_ieps == True:
 
-            te2 = line.tax_id.filtered(lambda x: 'IEPS' in x.description and x.amount_type == 'fixed' and x.price_include!=True).compute_all(p2, line.order_id.currency_id, 1, product=line.product_id, partner=line.order_id.partner_shipping_id)['taxes']
-            print("te2",te2)
-            if te2:
-                impuestos += te2[0]['amount']
-            t2 = line.tax_id.filtered(lambda x: 'IEPS' in x.description and x.amount_type == 'fixed' and x.price_include==True).compute_all(p2, line.order_id.currency_id, 1, product=line.product_id, partner=line.order_id.partner_shipping_id)['taxes']
-            print("t2",t2)
-            if t2:
-                p -= float(t2[0]['amount'])
-                p3 = p2-float(t2[0]['amount'])
-                impuestos += t2[0]['amount']
+                for line in self:
+                    price = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
+                    taxes = line.tax_id.compute_all(price, line.order_id.currency_id, line.product_uom_qty, product=line.product_id, partner=line.order_id.partner_shipping_id)
+                    line.update({
+                        'price_tax': taxes['total_included'] - taxes['total_excluded'],
+                        'price_total': taxes['total_included'],
+                        'price_subtotal': taxes['total_excluded'],
+                    })
+                    if self.env.context.get('import_file', False) and not self.env.user.user_has_groups('account.group_account_manager'):
+                        line.tax_id.invalidate_cache(['invoice_repartition_line_ids'], [line.tax_id.id])
 
-            te3 = line.tax_id.filtered(lambda x: 'IEPS' in x.description and x.amount_type == 'percent' and x.price_include!=True).compute_all(p3, line.order_id.currency_id, 1, product=line.product_id, partner=line.order_id.partner_shipping_id)['taxes']
-            print("te3",te3)
-            if te3:
-                impuestos += te3[0]['amount']
-            t3 = line.tax_id.filtered(lambda x: 'IEPS' in x.description and x.amount_type == 'percent' and x.price_include==True).compute_all(p3, line.order_id.currency_id, 1, product=line.product_id, partner=line.order_id.partner_shipping_id)['taxes']
-            print("t3",te3)
-            if t3:
-                p -= float(t3[0]['amount'])
-                impuestos += t3[0]['amount']
-            x = {
-                'price_tax': impuestos*line.product_uom_qty,
-                'price_total': (p*line.product_uom_qty)+(impuestos*line.product_uom_qty),
-                'price_subtotal': p*line.product_uom_qty,#taxes['total_excluded'],
-            }
-            print("ccccccccccccc",x)
-            line.update(x)
+            else:
+
+
+                for line in self:
+                    p = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
+                    p1 = line.price_unit * (1 - (line.discount or 0.0) / 100.0)
+                    p2 = 0.0
+                    p3 = 0.0
+                    impuestos = 0.0
+
+                    te1 = line.tax_id.filtered(lambda x: 'IEPS' not in x.description and x.price_include!=True).compute_all(p1, line.order_id.currency_id, 1, product=line.product_id, partner=line.order_id.partner_shipping_id)['taxes']
+                    print("te1",te1)
+                    if te1:
+                        impuestos += te1[0]['amount']
+                    t1 = line.tax_id.filtered(lambda x: 'IEPS' not in x.description and x.price_include==True).compute_all(p1, line.order_id.currency_id, 1, product=line.product_id, partner=line.order_id.partner_shipping_id)['taxes']
+                    print("t1",t1)
+                    if t1:
+                        p -= float(t1[0]['amount'])
+                        p2 = p1-float(t1[0]['amount'])
+                        impuestos += t1[0]['amount']
+
+                    te2 = line.tax_id.filtered(lambda x: 'IEPS' in x.description and x.amount_type == 'fixed' and x.price_include!=True).compute_all(p2, line.order_id.currency_id, 1, product=line.product_id, partner=line.order_id.partner_shipping_id)['taxes']
+                    print("te2",te2)
+                    if te2:
+                        impuestos += te2[0]['amount']
+                    t2 = line.tax_id.filtered(lambda x: 'IEPS' in x.description and x.amount_type == 'fixed' and x.price_include==True).compute_all(p2, line.order_id.currency_id, 1, product=line.product_id, partner=line.order_id.partner_shipping_id)['taxes']
+                    print("t2",t2)
+                    if t2:
+                        p -= float(t2[0]['amount'])
+                        p3 = p2-float(t2[0]['amount'])
+                        impuestos += t2[0]['amount']
+
+                    te3 = line.tax_id.filtered(lambda x: 'IEPS' in x.description and x.amount_type == 'percent' and x.price_include!=True).compute_all(p3, line.order_id.currency_id, 1, product=line.product_id, partner=line.order_id.partner_shipping_id)['taxes']
+                    print("te3",te3)
+                    if te3:
+                        impuestos += te3[0]['amount']
+                    t3 = line.tax_id.filtered(lambda x: 'IEPS' in x.description and x.amount_type == 'percent' and x.price_include==True).compute_all(p3, line.order_id.currency_id, 1, product=line.product_id, partner=line.order_id.partner_shipping_id)['taxes']
+                    print("t3",te3)
+                    if t3:
+                        p -= float(t3[0]['amount'])
+                        impuestos += t3[0]['amount']
+                    x = {
+                        'price_tax': impuestos*line.product_uom_qty,
+                        'price_total': (p*line.product_uom_qty)+(impuestos*line.product_uom_qty),
+                        'price_subtotal': p*line.product_uom_qty,#taxes['total_excluded'],
+                    }
+                    print("ccccccccccccc",x)
+                    line.update(x)
 
 
 
