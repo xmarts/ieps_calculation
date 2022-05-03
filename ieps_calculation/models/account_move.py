@@ -33,3 +33,19 @@ class AccountMove(models.Model):
         self.line_ids = others_lines + self.invoice_line_ids
         self._onchange_recompute_dynamic_lines()
 
+    def _get_values_ieps(self):
+        for rec in self:
+            for l in rec.edi_document_ids:
+                cfdi_3_3_edi = self.env.ref('l10n_mx_edi.edi_cfdi_3_3')
+                if l.edi_format_id == cfdi_3_3_edi:
+                    invoice = l.move_id
+                    xml = l.edi_format_id._l10n_mx_edi_get_invoice_cfdi_values(invoice)
+                    print("+++++",xml['tax_details_transferred'])
+                    for l in xml['tax_details_transferred']:
+                        print("lll",l)
+                    raise UserError(_("xxx"))
+                    return l.edi_format_id._l10n_mx_edi_get_invoice_cfdi_values(invoice)
+
+    def ipes(self,ids):
+        print("------------------------------------",ids)
+

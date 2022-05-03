@@ -1,0 +1,14 @@
+<odoo>
+  <data>
+    <record id="account_tax_camp_ieps" model="ir.ui.view">
+      <field name="name">account.tax.camp.ieps</field>
+      <field name="model">account.tax</field>
+      <field name="inherit_id" ref="account.view_tax_form"/>
+      <field name="arch" type="xml">
+        <xpath expr="//field[@name='active']" position="after">
+            <field name="ieps"/>
+        </xpath>
+      </field>
+    </record> 
+  </data>
+</odoo>
