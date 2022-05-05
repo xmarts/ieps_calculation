@@ -41,6 +41,7 @@
                     t-att-ResidenciaFiscal="customer_fiscal_residence"
                     t-att-UsoCFDI="record.l10n_mx_edi_usage"/>
                 <!-- <t t-set="xx" t-value="record._get_values_ieps()"/> -->
+                <t t-set="otro" t-value="0"/>
                 <cfdi:Conceptos>
                     <t t-foreach="invoice_line_vals_list" t-as="line_vals">
                         <t t-set="line" t-value="line_vals['line']"/>
@@ -59,17 +60,32 @@
                             <t t-if="tax_detail_transferred['tax_details'] or tax_detail_withholding['tax_details']">
                                 <cfdi:Impuestos>
                                     <t t-if="tax_detail_transferred['tax_details']">
-
                                         <cfdi:Traslados>
                                             <t t-foreach="tax_detail_transferred['tax_details'].values()" t-as="tax_detail_vals">
                                                 <t t-set="tax" t-value="tax_detail_vals['tax']"/>
-                                                <t t-set="xxx" t-value="record.ieps(tax_detail_vals['tax'])"/>
-                                                <cfdi:Traslado
-                                                    t-att-Base="format_float(balance_multiplicator * tax_detail_vals['base_amount_currency'], currency_precision)"
-                                                    t-att-Impuesto="get_tax_cfdi_name(tax_detail_vals)"
-                                                    t-att-TipoFactor="tax.l10n_mx_tax_type"
-                                                    t-att-TasaOCuota="format_float(tax_detail_vals['tax_rate_transferred'], 6)"
-                                                    t-att-Importe="format_float(balance_multiplicator * tax_detail_vals['tax_amount_currency'], 2) if tax.l10n_mx_tax_type != 'Exento' else False"/>
+                                                <t t-set="ttt" t-value="record.get_ieps(tax_detail_vals['tax'])"/> <!-- Nueva linea -->
+                                                <t t-set="xxx" t-value="balance_multiplicator * tax_detail_vals['tax_amount_currency'] if tax.l10n_mx_tax_type != 'Exento' else 0"/> <!-- Nueva linea -->
+                                                <t t-if="record.partner_id.show_ieps == True and tax.ieps == True">
+                                                    <cfdi:Traslado
+                                                        t-att-Base="format_float(balance_multiplicator * tax_detail_vals['base_amount_currency'], currency_precision)"
+                                                        t-att-Impuesto="get_tax_cfdi_name(tax_detail_vals)"
+                                                        t-att-TipoFactor="tax.l10n_mx_tax_type"
+                                                        t-att-TasaOCuota="format_float(tax_detail_vals['tax_rate_transferred'], 6)"
+                                                        t-att-Importe="format_float(balance_multiplicator * tax_detail_vals['tax_amount_currency'], 2) if tax.l10n_mx_tax_type != 'Exento' else False"/>
+                                                        <t t-set='otro' t-value="otro+xxx"/>
+                                                </t>
+                                                <t t-if="record.partner_id.show_ieps == False and tax.ieps == True">
+                                                    <t t-set='otro' t-value="otro-xxx"/>
+                                                </t>
+                                                <t t-if="tax.ieps == False">
+                                                    <cfdi:Traslado
+                                                        t-att-Base="format_float(balance_multiplicator * tax_detail_vals['base_amount_currency'], currency_precision)"
+                                                        t-att-Impuesto="get_tax_cfdi_name(tax_detail_vals)"
+                                                        t-att-TipoFactor="tax.l10n_mx_tax_type"
+                                                        t-att-TasaOCuota="format_float(tax_detail_vals['tax_rate_transferred'], 6)"
+                                                        t-att-Importe="format_float(balance_multiplicator * tax_detail_vals['tax_amount_currency'], 2) if tax.l10n_mx_tax_type != 'Exento' else False"/>
+                                                        <t t-set='otro' t-value="otro+xxx"/>
+                                                </t>
                                             </t>
                                         </cfdi:Traslados>
                                     </t>
@@ -93,7 +109,7 @@
                 </cfdi:Conceptos>
                 <t t-if="has_tax_details_transferred_no_exento or has_tax_details_withholding_no_exento">
                     <cfdi:Impuestos
-                        t-att-TotalImpuestosTrasladados="format_float(balance_multiplicator * tax_details_transferred['tax_amount_currency'], currency_precision) if tax_details_transferred['tax_details'] else None"
+                        t-att-TotalImpuestosTrasladados="format_float(balance_multiplicator * otro, currency_precision) if tax_details_transferred['tax_details'] else None"
                         t-att-TotalImpuestosRetenidos="format_float(-balance_multiplicator * tax_details_withholding['tax_amount_currency'], currency_precision) if tax_details_withholding['tax_details'] else None">
                         <t t-if="tax_details_withholding['tax_details']">
                             <cfdi:Retenciones>
@@ -112,11 +128,22 @@
                                 <t t-foreach="tax_details_transferred['tax_details'].values()" t-as="tax_detail_vals">
                                     <t t-set="tax" t-value="tax_detail_vals['tax']"/>
                                     <t t-if="tax.l10n_mx_tax_type != 'Exento'">
-                                        <cfdi:Traslado
-                                            t-att-Importe="format_float(balance_multiplicator * tax_detail_vals['tax_amount_currency'], currency_precision)"
-                                            t-att-Impuesto="get_tax_cfdi_name(tax_detail_vals)"
-                                            t-att-TipoFactor="tax.l10n_mx_tax_type"
-                                            t-att-TasaOCuota="format_float(tax_detail_vals['tax_rate_transferred'], 6)"/>
+                                        <t t-if="record.partner_id.show_ieps == True and tax.ieps == True">
+                                            <cfdi:Traslado
+                                                t-att-Importe="format_float(balance_multiplicator * tax_detail_vals['tax_amount_currency'], currency_precision)"
+                                                t-att-Impuesto="get_tax_cfdi_name(tax_detail_vals)"
+                                                t-att-TipoFactor="tax.l10n_mx_tax_type"
+                                                t-att-TasaOCuota="format_float(tax_detail_vals['tax_rate_transferred'], 6)"/>
+                                        </t>
+                                        <t t-if="record.partner_id.show_ieps == False and tax.ieps == True">
+                                        </t>
+                                        <t t-if="tax.ieps == False">
+                                            <cfdi:Traslado
+                                                t-att-Importe="format_float(balance_multiplicator * tax_detail_vals['tax_amount_currency'], currency_precision)"
+                                                t-att-Impuesto="get_tax_cfdi_name(tax_detail_vals)"
+                                                t-att-TipoFactor="tax.l10n_mx_tax_type"
+                                                t-att-TasaOCuota="format_float(tax_detail_vals['tax_rate_transferred'], 6)"/>
+                                        </t>
                                     </t>
                                 </t>
                             </cfdi:Traslados>

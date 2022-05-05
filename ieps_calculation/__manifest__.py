@@ -1,31 +1,20 @@
 # -*- coding: utf-8 -*-
 {
     'name': "Calculo de IEPS",
-
-    'summary': """
-        Calculo de IEPS en Facturacion y Ventas""",
-
-    'description': """
-        Reconfiguracion para calculo de IEPS
-    """,
-
+    'summary': """Calculo de IEPS en Facturacion y Ventas""",
+    'description': """Reconfiguracion para calculo de IEPS""",
     'author': "Xmarts",
-    'website': "https://www.xmarts.com",
-
-    # Categories can be used to filter modules in modules listing
-    # Check https://github.com/odoo/odoo/blob/12.0/odoo/addons/base/data/ir_module_category_data.xml
-    # for the full list
+    'contributors': "pablo.osorio@xmarts.com, victoralonso@xmarts.com, javier.hilario@xmarts.com",
+    'website': "http://www.xmarts.com",
     'category': 'account',
-    'version': '0.1',
-
-    # any module necessary for this one to work correctly
-    'depends': ['base','sale','account'],
-
-    # always loaded
+    'version': '15.0.1.0.0',
+    'depends': ['base', 'sale', 'account'],
     'data': [
         # 'security/ir.model.access.csv',
         'views/res_partner.xml',
         'views/views.xml',
-        #'reports/report_ieps.xml'
+        'views/account_tax.xml',
+        'views/cfdi.xml',
+        # 'reports/report_ieps.xml'
     ],
 }

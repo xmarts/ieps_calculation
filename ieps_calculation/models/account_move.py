@@ -46,6 +46,8 @@ class AccountMove(models.Model):
                     raise UserError(_("xxx"))
                     return l.edi_format_id._l10n_mx_edi_get_invoice_cfdi_values(invoice)
 
-    def ipes(self,ids):
-        print("------------------------------------",ids)
-
+    def get_ieps(self, tax_detail_vals):
+        print("-----------------------------------------------------------------------")
+        print('tax_detail_vals', tax_detail_vals)
+        print('tax_detail_vals.name', tax_detail_vals.name)
+        print('tax_detail_vals.ieps', tax_detail_vals.ieps)
