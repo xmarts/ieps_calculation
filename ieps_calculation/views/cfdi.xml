@@ -2,6 +2,26 @@
 <odoo>
     <data>
         <template id="l10n_mx_edi.cfdiv33">
+            <t t-set="total_concepto_importe" t-value="0"/>
+            <t t-foreach="invoice_line_vals_list" t-as="line_vals">
+                <t t-set="line" t-value="line_vals['line']"/>
+                <t t-set="concepto_importe" t-value="line_vals['price_subtotal_before_discount']"/>
+
+                <t t-set="tax_detail_transferred" t-value="tax_details_transferred['invoice_line_tax_details'][line]"/>
+                <t t-set="tax_detail_withholding" t-value="tax_details_withholding['invoice_line_tax_details'][line]"/>
+                <t t-if="tax_detail_transferred['tax_details'] or tax_detail_withholding['tax_details']">
+                    <t t-if="tax_detail_transferred['tax_details']">
+                        <t t-foreach="tax_detail_transferred['tax_details'].values()" t-as="tax_detail_vals">
+                            <t t-set="tax" t-value="tax_detail_vals['tax']"/>
+                            <t t-set="importee" t-value="balance_multiplicator * tax_detail_vals['tax_amount_currency'] if tax.l10n_mx_tax_type != 'Exento' else 0"/>
+                            <t t-if="record.partner_id.show_ieps == False and tax.ieps == True">
+                                <t t-set='concepto_importe' t-value="concepto_importe+importee"/>
+                            </t>
+                        </t>
+                    </t>
+                </t>
+                <t t-set="total_concepto_importe" t-value="total_concepto_importe+concepto_importe"/>
+            </t>
             <cfdi:Comprobante
                 xsi:schemaLocation="http://www.sat.gob.mx/cfd/3 http://www.sat.gob.mx/sitio_internet/cfd/3/cfdv33.xsd http://www.sat.gob.mx/ComercioExterior11 http://www.sat.gob.mx/sitio_internet/cfd/ComercioExterior11/ComercioExterior11.xsd"
                 xmlns:cfdi="http://www.sat.gob.mx/cfd/3"
@@ -16,7 +36,7 @@
                 t-att-NoCertificado="certificate_number"
                 t-att-Certificado="certificate_key"
                 t-att-CondicionesDePago="format_string(record.invoice_payment_term_id.name, 1000)"
-                t-att-SubTotal="format_float(total_price_subtotal_before_discount, currency_precision)"
+                t-att-SubTotal="format_float(total_concepto_importe, currency_precision)"
                 t-att-Descuento="format_float(total_price_discount, currency_precision) if total_price_discount else None"
                 t-att-Moneda="currency_name"
                 t-att-TipoCambio="format_float(currency_conversion_rate, 6)"
@@ -40,11 +60,28 @@
                     t-att-Nombre="format_string(customer.commercial_partner_id.name, 254)"
                     t-att-ResidenciaFiscal="customer_fiscal_residence"
                     t-att-UsoCFDI="record.l10n_mx_edi_usage"/>
-                <!-- <t t-set="xx" t-value="record._get_values_ieps()"/> -->
-                <t t-set="otro" t-value="0"/>
+                <t t-set="total_impuestos_trasladados" t-value="0"/>
                 <cfdi:Conceptos>
                     <t t-foreach="invoice_line_vals_list" t-as="line_vals">
                         <t t-set="line" t-value="line_vals['line']"/>
+                        <t t-set="valor_unitario" t-value="line_vals['gross_price_total_unit']"/>
+                        <t t-set="concepto_importe" t-value="line_vals['price_subtotal_before_discount']"/>
+
+                        <t t-set="tax_detail_transferred" t-value="tax_details_transferred['invoice_line_tax_details'][line]"/>
+                        <t t-set="tax_detail_withholding" t-value="tax_details_withholding['invoice_line_tax_details'][line]"/>
+                        <t t-if="tax_detail_transferred['tax_details'] or tax_detail_withholding['tax_details']">
+                            <t t-if="tax_detail_transferred['tax_details']">
+                                <t t-foreach="tax_detail_transferred['tax_details'].values()" t-as="tax_detail_vals">
+                                    <t t-set="tax" t-value="tax_detail_vals['tax']"/>
+                                    <t t-set="importee" t-value="balance_multiplicator * tax_detail_vals['tax_amount_currency'] if tax.l10n_mx_tax_type != 'Exento' else 0"/>
+                                    <t t-if="record.partner_id.show_ieps == False and tax.ieps == True">
+                                        <t t-set='valor_unitario' t-value="valor_unitario+importee"/>
+                                        <t t-set='concepto_importe' t-value="concepto_importe+importee"/>
+                                    </t>
+                                </t>
+                            </t>
+                        </t>
+
                         <cfdi:Concepto
                             t-att-ClaveProdServ="line.product_id.unspsc_code_id.code"
                             t-att-NoIdentificacion="format_string(line.product_id.default_code)"
@@ -52,8 +89,8 @@
                             t-att-ClaveUnidad="line.product_uom_id.unspsc_code_id.code"
                             t-att-Unidad="format_string(line.product_uom_id.name, 20)"
                             t-att-Descripcion="format_string(line.name, 1000)"
-                            t-att-ValorUnitario="format_float(line_vals['gross_price_total_unit'], currency_precision)"
-                            t-att-Importe="format_float(line_vals['price_subtotal_before_discount'], currency_precision)"
+                            t-att-ValorUnitario="format_float(valor_unitario, currency_precision)"
+                            t-att-Importe="format_float(concepto_importe, currency_precision)"
                             t-att-Descuento="format_float(line_vals['price_discount'], currency_precision) if line_vals['price_discount'] else None">
                             <t t-set="tax_detail_transferred" t-value="tax_details_transferred['invoice_line_tax_details'][line]"/>
                             <t t-set="tax_detail_withholding" t-value="tax_details_withholding['invoice_line_tax_details'][line]"/>
@@ -63,8 +100,9 @@
                                         <cfdi:Traslados>
                                             <t t-foreach="tax_detail_transferred['tax_details'].values()" t-as="tax_detail_vals">
                                                 <t t-set="tax" t-value="tax_detail_vals['tax']"/>
-                                                <t t-set="ttt" t-value="record.get_ieps(tax_detail_vals['tax'])"/> <!-- Nueva linea -->
-                                                <t t-set="xxx" t-value="balance_multiplicator * tax_detail_vals['tax_amount_currency'] if tax.l10n_mx_tax_type != 'Exento' else 0"/> <!-- Nueva linea -->
+                                                <!-- <t t-set="ttt" t-value="record.get_ieps(tax_detail_vals['tax'])"/> -->
+                                                <t t-set="importee" t-value="balance_multiplicator * tax_detail_vals['tax_amount_currency'] if tax.l10n_mx_tax_type != 'Exento' else 0"/>
+
                                                 <t t-if="record.partner_id.show_ieps == True and tax.ieps == True">
                                                     <cfdi:Traslado
                                                         t-att-Base="format_float(balance_multiplicator * tax_detail_vals['base_amount_currency'], currency_precision)"
@@ -72,11 +110,9 @@
                                                         t-att-TipoFactor="tax.l10n_mx_tax_type"
                                                         t-att-TasaOCuota="format_float(tax_detail_vals['tax_rate_transferred'], 6)"
                                                         t-att-Importe="format_float(balance_multiplicator * tax_detail_vals['tax_amount_currency'], 2) if tax.l10n_mx_tax_type != 'Exento' else False"/>
-                                                        <t t-set='otro' t-value="otro+xxx"/>
+                                                        <t t-set='total_impuestos_trasladados' t-value="total_impuestos_trasladados+importee"/>
                                                 </t>
-                                                <t t-if="record.partner_id.show_ieps == False and tax.ieps == True">
-                                                    <t t-set='otro' t-value="otro-xxx"/>
-                                                </t>
+                                                <t t-if="record.partner_id.show_ieps == False and tax.ieps == True"></t>
                                                 <t t-if="tax.ieps == False">
                                                     <cfdi:Traslado
                                                         t-att-Base="format_float(balance_multiplicator * tax_detail_vals['base_amount_currency'], currency_precision)"
@@ -84,7 +120,7 @@
                                                         t-att-TipoFactor="tax.l10n_mx_tax_type"
                                                         t-att-TasaOCuota="format_float(tax_detail_vals['tax_rate_transferred'], 6)"
                                                         t-att-Importe="format_float(balance_multiplicator * tax_detail_vals['tax_amount_currency'], 2) if tax.l10n_mx_tax_type != 'Exento' else False"/>
-                                                        <t t-set='otro' t-value="otro+xxx"/>
+                                                        <t t-set='total_impuestos_trasladados' t-value="total_impuestos_trasladados+importee"/>
                                                 </t>
                                             </t>
                                         </cfdi:Traslados>
@@ -107,9 +143,11 @@
                         </cfdi:Concepto>
                     </t>
                 </cfdi:Conceptos>
+                <t t-set="ttt" t-value="record.get_ieps_otro(total_impuestos_trasladados)"/> <!-- Nueva linea -->
+                <t t-set='total_impuestos_trasladados' t-value="total_impuestos_trasladados * -1"/>
                 <t t-if="has_tax_details_transferred_no_exento or has_tax_details_withholding_no_exento">
                     <cfdi:Impuestos
-                        t-att-TotalImpuestosTrasladados="format_float(balance_multiplicator * otro, currency_precision) if tax_details_transferred['tax_details'] else None"
+                        t-att-TotalImpuestosTrasladados="format_float(balance_multiplicator * total_impuestos_trasladados, currency_precision) if tax_details_transferred['tax_details'] else None"
                         t-att-TotalImpuestosRetenidos="format_float(-balance_multiplicator * tax_details_withholding['tax_amount_currency'], currency_precision) if tax_details_withholding['tax_details'] else None">
                         <t t-if="tax_details_withholding['tax_details']">
                             <cfdi:Retenciones>
@@ -135,8 +173,7 @@
                                                 t-att-TipoFactor="tax.l10n_mx_tax_type"
                                                 t-att-TasaOCuota="format_float(tax_detail_vals['tax_rate_transferred'], 6)"/>
                                         </t>
-                                        <t t-if="record.partner_id.show_ieps == False and tax.ieps == True">
-                                        </t>
+                                        <t t-if="record.partner_id.show_ieps == False and tax.ieps == True"></t>
                                         <t t-if="tax.ieps == False">
                                             <cfdi:Traslado
                                                 t-att-Importe="format_float(balance_multiplicator * tax_detail_vals['tax_amount_currency'], currency_precision)"
