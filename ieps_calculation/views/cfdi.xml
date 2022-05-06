@@ -144,7 +144,7 @@
                     </t>
                 </cfdi:Conceptos>
                 <t t-set="ttt" t-value="record.get_ieps_otro(total_impuestos_trasladados)"/> <!-- Nueva linea -->
-                <t t-set='total_impuestos_trasladados' t-value="total_impuestos_trasladados * -1"/>
+                <t t-set='total_impuestos_trasladados' t-value="total_impuestos_trasladados * balance_multiplicator"/>
                 <t t-if="has_tax_details_transferred_no_exento or has_tax_details_withholding_no_exento">
                     <cfdi:Impuestos
                         t-att-TotalImpuestosTrasladados="format_float(balance_multiplicator * total_impuestos_trasladados, currency_precision) if tax_details_transferred['tax_details'] else None"
