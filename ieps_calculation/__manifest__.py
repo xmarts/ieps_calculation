@@ -16,5 +16,6 @@
         'views/account_tax.xml',
         'views/cfdi.xml',
         # 'reports/report_ieps.xml'
+        'reports/inherit_report_invoice_document_template.xml'
     ],
 }
