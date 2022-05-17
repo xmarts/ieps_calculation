@@ -1,0 +1,12 @@
+<odoo>
+    <record id="inherit_account_tax_group_tree_view" model="ir.ui.view">
+        <field name="name">inherit.account.tax.group.tree.view</field>
+        <field name="model">account.tax.group</field>
+        <field name="inherit_id" ref="account.view_tax_group_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='country_id']" position="after">
+                <field name="ieps"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

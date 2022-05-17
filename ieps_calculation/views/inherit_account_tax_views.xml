@@ -9,6 +9,6 @@
             <field name="ieps"/>
         </xpath>
       </field>
-    </record> 
+    </record>
   </data>
 </odoo>

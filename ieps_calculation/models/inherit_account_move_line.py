@@ -19,32 +19,16 @@ class AccountMoveLine(models.Model):
             taxes=taxes or self.tax_ids,
             move_type=move_type or self.move_id.move_type,
         )
-        # print('taxes', taxes)
         amount = 0
-        for item in taxes:
-            tax = self.env['account.tax'].browse(item['id'])
-            item.update({'ieps': tax.ieps})
-            print('item', item)
-            if not self.move_id.partner_id.show_ieps and tax.ieps:
-                amount += item.get('amount')
-
+        if taxes:
+            for item in taxes:
+                tax = self.env['account.tax'].browse(item['id'])
+                item.update({'ieps': tax.ieps})
+                print('item', item)
+                if not self.move_id.partner_id.show_ieps and tax.ieps:
+                    amount += item.get('amount')
         print('amount', amount)
         return amount
-
-    # def otro(self, price_unit=None, quantity=None, discount=None, currency=None, product=None, partner=None, taxes=None, move_type=None):
-    #     print("------------------------------------otro-----------------------------------")
-    #     self.ensure_one()
-    #     print('self', self)
-    #     return self.otro_model(
-    #         price_unit=price_unit or self.price_unit,
-    #         quantity=quantity or self.quantity,
-    #         discount=discount or self.discount,
-    #         currency=currency or self.currency_id,
-    #         product=product or self.product_id,
-    #         partner=partner or self.partner_id,
-    #         taxes=taxes or self.tax_ids,
-    #         move_type=move_type or self.move_id.move_type,
-    #     )
 
     @api.model
     def get_taxes_from_invoice_line_model(self, price_unit, quantity, discount, currency, product, partner, taxes, move_type):
@@ -56,5 +40,4 @@ class AccountMoveLine(models.Model):
         if taxes:
             res = taxes._origin.with_context(force_sign=1).compute_all(line_discount_price_unit,
                 quantity=quantity, currency=currency, product=product, partner=partner, is_refund=move_type in ('out_refund', 'in_refund'))
-        # print('res', res)
         return res.get('taxes') or False

@@ -11,9 +11,10 @@
     'depends': ['base', 'sale', 'account'],
     'data': [
         # 'security/ir.model.access.csv',
-        'views/res_partner.xml',
+        'views/inherit_res_partner_views.xml',
         'views/views.xml',
-        'views/account_tax.xml',
+        'views/inherit_account_tax_views.xml',
+        'views/inherit_account_tax_group_views.xml',
         'views/cfdi.xml',
         # 'reports/report_ieps.xml'
         'reports/inherit_report_invoice_document_template.xml'
