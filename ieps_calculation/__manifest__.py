@@ -12,7 +12,7 @@
     'data': [
         # 'security/ir.model.access.csv',
         'views/inherit_res_partner_views.xml',
-        'views/views.xml',
+        # 'views/views.xml',
         'views/inherit_account_tax_views.xml',
         'views/inherit_account_tax_group_views.xml',
         'views/cfdi.xml',
