@@ -147,14 +147,26 @@ class AccountMove(models.Model):
                     print("++++invoice_line+++++++",t.ieps)
                 tax = self.env['account.tax'].browse(tax_id_ieps)
                 print("++++taxes_res+++++++",invoice_line.tax_ids,tax)
-                taxes_res = tax.compute_all(
-                    invoice_line.price_unit * (1 - (invoice_line.discount / 100.0)),
-                    currency=invoice_line.currency_id,
-                    quantity=invoice_line.quantity,
-                    product=invoice_line.product_id,
-                    partner=invoice_line.partner_id,
-                    is_refund=invoice_line.move_id.move_type in ('in_refund', 'out_refund'),
-                )
+                taxes_res = False
+                if self.partner_id.show_ieps == False:
+                    taxes_res = tax.compute_all(
+                        invoice_line.price_unit * (1 - (invoice_line.discount / 100.0)),
+                        currency=invoice_line.currency_id,
+                        quantity=invoice_line.quantity,
+                        product=invoice_line.product_id,
+                        partner=invoice_line.partner_id,
+                        is_refund=invoice_line.move_id.move_type in ('in_refund', 'out_refund'),
+                    )
+                else:
+                    taxes_res = invoice_line.tax_ids.compute_all(
+                        invoice_line.price_unit * (1 - (invoice_line.discount / 100.0)),
+                        currency=invoice_line.currency_id,
+                        quantity=invoice_line.quantity,
+                        product=invoice_line.product_id,
+                        partner=invoice_line.partner_id,
+                        is_refund=invoice_line.move_id.move_type in ('in_refund', 'out_refund'),
+                    )
+
                 #raise UserError(_("xxxxx"))
                 invoice_lines_tax_values_dict[invoice_line] = []
                 rate = abs(invoice_line.balance) / abs(invoice_line.amount_currency) if invoice_line.amount_currency else 0.0
@@ -213,12 +225,38 @@ class AccountMove(models.Model):
 
             for zero_tax in taxes_set:
 
-                if zero_tax.ieps == False:
+                if self.partner_id.show_ieps == False:
 
+                    if zero_tax.ieps == False:
+
+                        affect_base_amount = 0.0
+                        affect_base_amount_currency = 0.0
+                        print("tax_values_list",tax_values_list)
+                        for tax_values in tax_values_list:
+                            if zero_tax in tax_values['tax_line_id'].tax_ids:
+                                affect_base_amount += tax_values['tax_amount']
+                                affect_base_amount_currency += tax_values['tax_amount_currency']
+
+                        for tax_rep in zero_tax[tax_rep_lines_field].filtered(lambda x: x.repartition_type == 'tax'):
+                            tax_values = {
+                                'base_line_id': invoice_line,
+                                'tax_line_id': self.env['account.move.line'],
+                                'src_line_id': invoice_line,
+                                'tax_id': zero_tax,
+                                'src_tax_id': zero_tax,
+                                'tax_repartition_line_id': tax_rep,
+                                'base_amount': invoice_line.balance + affect_base_amount,
+                                'tax_amount': 0.0,
+                                'base_amount_currency': invoice_line.amount_currency + affect_base_amount_currency,
+                                'tax_amount_currency': 0.0,
+                            }
+
+                            if not filter_to_apply or filter_to_apply(tax_values):
+                                filtered_invoice_lines_tax_values_dict[invoice_line].append(tax_values)
+                else:
                     affect_base_amount = 0.0
                     affect_base_amount_currency = 0.0
                     print("tax_values_list",tax_values_list)
-                    raise UserError(_("xxxxx"))
                     for tax_values in tax_values_list:
                         if zero_tax in tax_values['tax_line_id'].tax_ids:
                             affect_base_amount += tax_values['tax_amount']
@@ -240,6 +278,7 @@ class AccountMove(models.Model):
 
                         if not filter_to_apply or filter_to_apply(tax_values):
                             filtered_invoice_lines_tax_values_dict[invoice_line].append(tax_values)
+
 
         # Initialize the results dict.
 
