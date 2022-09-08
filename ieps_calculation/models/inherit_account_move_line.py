@@ -56,7 +56,9 @@ class AccountMoveLine(models.Model):
         '''
         self.ensure_one()
 
-        if self.move_id.partner_id.show_ieps == False:
+        print("_prepare_edi_vals_to_export",self.move_id.partner_id.show_ieps)
+
+        if self.move_id.partner_id.show_ieps == True:
 
             
 
