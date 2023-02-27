@@ -21,4 +21,4 @@ from odoo.addons import decimal_precision as dp
 import logging
 class ResPartner(models.Model):
     _inherit = "res.partner"
-    show_ieps = fields.Boolean(string="Mostrar IEPS.", default=False)
+    show_ieps = fields.Boolean(string="Mostrar IEPS (Factura cliente)", default=False)
